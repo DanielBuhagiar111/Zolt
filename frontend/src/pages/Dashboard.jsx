@@ -41,6 +41,26 @@ function Dashboard() {
     }
   };
 
+  const loadBookings = async (userId) => {
+    const response = await fetch(`${API_URL}/bookings/user/${userId}`);
+    if (response.ok) setBookings(await response.json());
+  };
+
+  const loadPayments = async (userId) => {
+    const response = await fetch(`${API_URL}/payments/user/${userId}`);
+    if (response.ok) setPayments(await response.json());
+  };
+
+  const loadLocations = async (userId) => {
+    const response = await fetch(`${API_URL}/locations/user/${userId}`);
+    if (response.ok) setLocations(await response.json());
+  };
+
+  const loadNotifications = async (userId) => {
+    const response = await fetch(`${API_URL}/customers/${userId}/notifications`);
+    if (response.ok) setNotifications(await response.json());
+  };
+
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     const token = localStorage.getItem("token");
@@ -52,13 +72,21 @@ function Dashboard() {
 
     setUser(storedUser);
     loadDashboardData(storedUser.id || storedUser._id);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!user || activePage !== "inbox") return;
+
+    const userId = user.id || user._id;
+
+    loadNotifications(userId);
 
     const interval = setInterval(() => {
-      loadDashboardData(storedUser.id || storedUser._id);
-    }, 5000);
+      loadNotifications(userId);
+    }, 3000);
 
     return () => clearInterval(interval);
-  }, [navigate]);
+  }, [activePage, user]);
 
   const logout = () => {
     localStorage.removeItem("user");
@@ -90,7 +118,7 @@ function Dashboard() {
             user={user}
             API_URL={API_URL}
             setMessage={setMessage}
-            loadDashboardData={loadDashboardData}
+            loadBookings={loadBookings}
             setActivePage={setActivePage}
           />
         )}
@@ -101,7 +129,8 @@ function Dashboard() {
             API_URL={API_URL}
             bookings={bookings}
             setMessage={setMessage}
-            loadDashboardData={loadDashboardData}
+            loadBookings={loadBookings}
+            loadPayments={loadPayments}
           />
         )}
 
@@ -113,7 +142,7 @@ function Dashboard() {
             API_URL={API_URL}
             locations={locations}
             setMessage={setMessage}
-            loadDashboardData={loadDashboardData}
+            loadLocations={loadLocations}
           />
         )}
 

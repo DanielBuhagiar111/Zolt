@@ -4,7 +4,7 @@ function BookRide({
   user,
   API_URL,
   setMessage,
-  loadDashboardData,
+  loadBookings,
   setActivePage,
 }) {
   const [bookingForm, setBookingForm] = useState({
@@ -142,7 +142,7 @@ function BookRide({
 
       setEstimatedPrice(null);
 
-      loadDashboardData(userId);
+      loadBookings(userId);
       setActivePage("bookings");
     } catch (error) {
       console.error(error);

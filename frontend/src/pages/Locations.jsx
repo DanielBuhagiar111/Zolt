@@ -1,7 +1,7 @@
 import { useState } from "react";
 import LocationCard from "../components/LocationCard";
 
-function Locations({ user, API_URL, locations, setMessage, loadDashboardData }) {
+function Locations({ user, API_URL, locations, setMessage, loadLocations }) {
   const [locationForm, setLocationForm] = useState({
     name: "",
     address: "",
@@ -44,7 +44,7 @@ function Locations({ user, API_URL, locations, setMessage, loadDashboardData }) 
         address: "",
       });
 
-      loadDashboardData(userId);
+      loadLocations(userId);
     } catch (error) {
       console.error(error);
       setMessage("Server error while adding location.");
@@ -92,7 +92,7 @@ function Locations({ user, API_URL, locations, setMessage, loadDashboardData }) 
       }
 
       setMessage("Location updated successfully.");
-      loadDashboardData(userId);
+      loadLocations(userId);
     } catch (error) {
       console.error(error);
       setMessage("Server error while updating location.");

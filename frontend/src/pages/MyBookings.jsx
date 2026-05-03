@@ -1,6 +1,6 @@
 import BookingCard from "../components/BookingCard";
 
-function MyBookings({ user, API_URL, bookings, setMessage, loadDashboardData }) {
+function MyBookings({user,API_URL,bookings,setMessage,loadBookings,loadPayments}) {
   const payBooking = async (bookingId) => {
     try {
       const userId = user.id || user._id;
@@ -24,7 +24,8 @@ function MyBookings({ user, API_URL, bookings, setMessage, loadDashboardData }) 
       }
 
       setMessage("Payment completed successfully.");
-      loadDashboardData(userId);
+      loadBookings(userId);
+      loadPayments(userId);
     } catch (error) {
       console.error(error);
       setMessage("Server error while processing payment.");

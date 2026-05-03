@@ -76,6 +76,7 @@ app.get("/api/locations/user/:userId", async (req, res) => {
             },
           };
         } catch (error) {
+          console.log("Weather error:", error.response?.data || error.message);
           return {
             ...location.toObject(),
             weather: {
