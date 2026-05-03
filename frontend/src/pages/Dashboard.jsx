@@ -21,33 +21,54 @@ function Dashboard() {
   const [notifications, setNotifications] = useState([]);
   const [message, setMessage] = useState("");
 
-  useEffect
+  const loadDashboardData = async (userId) => {
+    try {
+      const [bookingsRes, paymentsRes, locationsRes, notificationsRes] =
+        await Promise.all([
+          fetch(`${API_URL}/bookings/user/${userId}`),
+          fetch(`${API_URL}/payments/user/${userId}`),
+          fetch(`${API_URL}/locations/user/${userId}`),
+          fetch(`${API_URL}/customers/${userId}/notifications`),
+        ]);
 
-    const loadDashboardData = async (userId) => {
-      try {
-        const [bookingsRes, paymentsRes, locationsRes, notificationsRes] =
-          await Promise.all([
-            fetch(`${API_URL}/bookings/user/${userId}`),
-            fetch(`${API_URL}/payments/user/${userId}`),
-            fetch(`${API_URL}/locations/user/${userId}`),
-            fetch(`${API_URL}/customers/${userId}/notifications`),
-          ]);
+      if (bookingsRes.ok) setBookings(await bookingsRes.json());
+      if (paymentsRes.ok) setPayments(await paymentsRes.json());
+      if (locationsRes.ok) setLocations(await locationsRes.json());
+      if (notificationsRes.ok) setNotifications(await notificationsRes.json());
+    } catch (error) {
+      console.error(error);
+      setMessage("Could not load dashboard data.");
+    }
+  };
 
-        if (bookingsRes.ok) setBookings(await bookingsRes.json());
-        if (paymentsRes.ok) setPayments(await paymentsRes.json());
-        if (locationsRes.ok) setLocations(await locationsRes.json());
-        if (notificationsRes.ok) setNotifications(await notificationsRes.json());
-      } catch (error) {
-        console.error(error);
-        setMessage("Could not load dashboard data.");
-      }
-    };
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
 
-    const logout = () => {
-      localStorage.removeItem("user");
-      localStorage.removeItem("token");
-      navigate("/");
-    };
+    if (!storedUser || !token) {
+      navigate("/login");
+      return;
+    }
+
+    setUser(storedUser);
+    loadDashboardData(storedUser.id || storedUser._id);
+
+    const interval = setInterval(() => {
+      loadDashboardData(storedUser.id || storedUser._id);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [navigate]);
+
+  const logout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-purple-50 text-slate-900">

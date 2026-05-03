@@ -134,7 +134,7 @@ app.put("/api/locations/:id", async (req, res) => {
     const location = await Location.findByIdAndUpdate(
       req.params.id,
       { name, address },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!location) {

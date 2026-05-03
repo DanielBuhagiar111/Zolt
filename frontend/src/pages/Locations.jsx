@@ -72,6 +72,33 @@ function Locations({ user, API_URL, locations, setMessage, loadDashboardData }) 
     }
   };
 
+  const updateLocation = async (locationId, updatedLocation) => {
+    try {
+      const userId = user.id || user._id;
+
+      const response = await fetch(`${API_URL}/locations/${locationId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedLocation),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.message || "Could not update location.");
+        return;
+      }
+
+      setMessage("Location updated successfully.");
+      loadDashboardData(userId);
+    } catch (error) {
+      console.error(error);
+      setMessage("Server error while updating location.");
+    }
+  };
+
   return (
     <section>
       <h2 className="text-3xl font-bold mb-6">Favourite Locations</h2>
@@ -111,6 +138,7 @@ function Locations({ user, API_URL, locations, setMessage, loadDashboardData }) 
               key={location._id || location.id}
               location={location}
               deleteLocation={deleteLocation}
+              updateLocation={updateLocation}
             />
           ))
         )}
