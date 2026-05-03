@@ -1,18 +1,141 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const axios = require("axios");
 
-dotenv.config();
+const connectDB = require("./config/db");
+const Payment = require("./models/Payment");
+
+dotenv.config({ path: "../../.env" });
+connectDB();
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.send('Service is running');
+app.get("/", (req, res) => {
+  res.send("Payment service is running");
 });
 
-const PORT = process.env.PORT || 5000;
+app.post("/api/payments", async (req, res) => {
+  try {
+    const { userId, bookingId } = req.body;
+
+    const bookingRes = await axios.get(
+      `${process.env.BOOKING_SERVICE_URL}/api/bookings/${bookingId}`
+    );
+    const booking = bookingRes.data;
+
+    const customerRes = await axios.get(
+      `${process.env.CUSTOMER_SERVICE_URL}/api/customers/${userId}`
+    );
+    const customer = customerRes.data;
+
+    const departureRes = await axios.get(
+      `${process.env.LOCATION_SERVICE_URL}/api/locations/coordinates`,
+      { params: { q: booking.startLocation } }
+    );
+
+    const arrivalRes = await axios.get(
+      `${process.env.LOCATION_SERVICE_URL}/api/locations/coordinates`,
+      { params: { q: booking.endLocation } }
+    );
+
+    const discount = customer.hasDiscount ? 0.9 : 1;
+
+    const fareRes = await axios.post(
+      `${process.env.FARE_SERVICE_URL}/api/fares/estimate`,
+      {
+        dep_lat: departureRes.data.lat,
+        dep_lng: departureRes.data.lng,
+        arr_lat: arrivalRes.data.lat,
+        arr_lng: arrivalRes.data.lng,
+        cabType: booking.cabType,
+        dateTime: booking.dateTime,
+        passengers: booking.passengers,
+        discount,
+      }
+    );
+
+    const cabFare = fareRes.data.cabFare;
+    const cabMultiplier = fareRes.data.cabMultiplier;
+    const daytimeMultiplier = fareRes.data.daytimeMultiplier;
+    const passengersMultiplier = fareRes.data.passengersMultiplier;
+    const totalPrice = fareRes.data.totalPrice;
+
+    const payment = await Payment.create({
+      userId,
+      bookingId,
+      cabFare,
+      cabMultiplier,
+      daytimeMultiplier,
+      passengersMultiplier,
+      discount,
+      totalPrice,
+    });
+
+    await axios.put(
+      `${process.env.BOOKING_SERVICE_URL}/api/bookings/${bookingId}/status`,
+      {
+        status: "completed",
+      }
+    );
+
+    await axios.post(
+      `${process.env.CUSTOMER_SERVICE_URL}/api/customers/${userId}/completed-booking`
+    );
+
+    res.status(201).json({
+      message: "Payment successful",
+      payment,
+    });
+  } catch (error) {
+    console.error("Payment error:", error.response?.data || error.message);
+
+    res.status(500).json({
+      message: "Payment failed",
+      error: error.response?.data || error.message,
+    });
+  }
+});
+
+app.get("/api/payments/user/:userId", async (req, res) => {
+  try {
+    const payments = await Payment.find({ userId: req.params.userId }).sort({
+      createdAt: -1,
+    });
+
+    res.json(payments);
+  } catch (error) {
+    res.status(500).json({
+      message: "Could not get payments",
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/payments/:id", async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id);
+
+    if (!payment) {
+      return res.status(404).json({
+        message: "Payment not found",
+      });
+    }
+
+    res.json(payment);
+  } catch (error) {
+    res.status(500).json({
+      message: "Could not get payment",
+      error: error.message,
+    });
+  }
+});
+
+const PORT = process.env.PAYMENT_SERVICE_PORT || 5005;
+
 app.listen(PORT, () => {
-  console.log(`Service running on port ${PORT}`);
+  console.log(`Payment service running on port ${PORT}`);
 });
