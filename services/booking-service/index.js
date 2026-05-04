@@ -20,9 +20,21 @@ app.get("/", (req, res) => {
 
 app.post("/api/bookings", async (req, res) => {
   try {
-    const { userId, startLocation, endLocation, dateTime, passengers, cabType } = req.body;
+    const {
+      userId,
+      startLocation,
+      endLocation,
+      dateTime,
+      passengers,
+      cabType,
+      estimatedPrice,
+      basePrice,
+      discountApplied,
+      discountPercent,
+      discountMultiplier,
+    } = req.body;
 
-    if (passengers > 8) {
+    if (Number(passengers) > 8) {
       return res.status(400).json({ message: "Maximum 8 passengers allowed" });
     }
 
@@ -33,14 +45,22 @@ app.post("/api/bookings", async (req, res) => {
       dateTime,
       passengers,
       cabType,
+      estimatedPrice,
+      basePrice,
+      discountApplied,
+      discountPercent,
+      discountMultiplier,
     });
 
     setTimeout(async () => {
       try {
-        await axios.post(`${process.env.CUSTOMER_SERVICE_URL}/api/customers/${userId}/notifications`, {
-          title: "Cab Ready",
-          message: `Your cab from ${startLocation} to ${endLocation} is ready for pickup.`,
-        });
+        await axios.post(
+          `${process.env.CUSTOMER_SERVICE_URL}/api/customers/${userId}/notifications`,
+          {
+            title: "Cab Ready",
+            message: `Your cab from ${startLocation} to ${endLocation} is ready for pickup.`,
+          }
+        );
       } catch (error) {
         console.log("Cab ready notification failed:", error.message);
       }
@@ -57,10 +77,16 @@ app.post("/api/bookings", async (req, res) => {
 
 app.get("/api/bookings/user/:userId", async (req, res) => {
   try {
-    const bookings = await Booking.find({ userId: req.params.userId }).sort({ createdAt: -1 });
+    const bookings = await Booking.find({ userId: req.params.userId }).sort({
+      createdAt: -1,
+    });
+
     res.json(bookings);
   } catch (error) {
-    res.status(500).json({ message: "Could not get bookings", error: error.message });
+    res.status(500).json({
+      message: "Could not get bookings",
+      error: error.message,
+    });
   }
 });
 
@@ -74,7 +100,10 @@ app.get("/api/bookings/:id", async (req, res) => {
 
     res.json(booking);
   } catch (error) {
-    res.status(500).json({ message: "Could not get booking", error: error.message });
+    res.status(500).json({
+      message: "Could not get booking",
+      error: error.message,
+    });
   }
 });
 
@@ -94,7 +123,10 @@ app.put("/api/bookings/:id/status", async (req, res) => {
 
     res.json(booking);
   } catch (error) {
-    res.status(500).json({ message: "Could not update booking", error: error.message });
+    res.status(500).json({
+      message: "Could not update booking",
+      error: error.message,
+    });
   }
 });
 

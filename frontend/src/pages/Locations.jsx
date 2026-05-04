@@ -65,7 +65,7 @@ function Locations({ user, API_URL, locations, setMessage, loadLocations }) {
       }
 
       setMessage("Location removed.");
-      loadDashboardData(userId);
+      loadLocations(userId);
     } catch (error) {
       console.error(error);
       setMessage("Server error while deleting location.");

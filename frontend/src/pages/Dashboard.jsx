@@ -66,7 +66,7 @@ function Dashboard() {
     const token = localStorage.getItem("token");
 
     if (!storedUser || !token) {
-      navigate("/login");
+      navigate("/");
       return;
     }
 
@@ -91,7 +91,7 @@ function Dashboard() {
   const logout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-    navigate("/login");
+    navigate("/");
   };
 
   if (!user) {

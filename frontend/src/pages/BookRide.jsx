@@ -15,19 +15,21 @@ function BookRide({
     cabType: "Economic",
   });
 
-  const [estimatedPrice, setEstimatedPrice] = useState(null);
+  const [fareEstimate, setFareEstimate] = useState(null);
 
   const handleChange = (e) => {
     setBookingForm({
       ...bookingForm,
       [e.target.name]: e.target.value,
     });
+
+    setFareEstimate(null);
   };
 
   const showEstimatedPrice = async () => {
     try {
       setMessage("");
-      setEstimatedPrice(null);
+      setFareEstimate(null);
 
       if (
         !bookingForm.startLocation ||
@@ -38,21 +40,15 @@ function BookRide({
         return;
       }
 
-      const startQuery = encodeURIComponent(
-        `${bookingForm.startLocation}, Malta`
-      );
+      const userId = user.id || user._id;
 
-      const endQuery = encodeURIComponent(
-        `${bookingForm.endLocation}, Malta`
-      );
+      const startQuery = encodeURIComponent(`${bookingForm.startLocation}, Malta`);
+      const endQuery = encodeURIComponent(`${bookingForm.endLocation}, Malta`);
 
       const startResponse = await fetch(
         `${API_URL}/locations/coordinates?q=${startQuery}`
       );
-
       const startData = await startResponse.json();
-
-      console.log("Start location:", startData);
 
       if (!startResponse.ok) {
         setMessage(startData.message || "Could not get pickup location.");
@@ -62,15 +58,22 @@ function BookRide({
       const endResponse = await fetch(
         `${API_URL}/locations/coordinates?q=${endQuery}`
       );
-
       const endData = await endResponse.json();
-
-      console.log("End location:", endData);
 
       if (!endResponse.ok) {
         setMessage(endData.message || "Could not get dropoff location.");
         return;
       }
+
+      const customerResponse = await fetch(`${API_URL}/customers/${userId}`);
+      const customerData = await customerResponse.json();
+
+      if (!customerResponse.ok) {
+        setMessage(customerData.message || "Could not get customer details.");
+        return;
+      }
+
+      const discount = customerData.hasDiscount ? 0.9 : 1;
 
       const fareResponse = await fetch(`${API_URL}/fares/estimate`, {
         method: "POST",
@@ -85,20 +88,18 @@ function BookRide({
           cabType: bookingForm.cabType,
           dateTime: bookingForm.dateTime,
           passengers: Number(bookingForm.passengers),
-          discount: 1,
+          discount,
         }),
       });
 
       const fareData = await fareResponse.json();
-
-      console.log("Fare data:", fareData);
 
       if (!fareResponse.ok) {
         setMessage(fareData.message || "Could not estimate fare.");
         return;
       }
 
-      setEstimatedPrice(fareData.totalPrice);
+      setFareEstimate(fareData);
     } catch (error) {
       console.error(error);
       setMessage("Server error while estimating fare.");
@@ -107,6 +108,11 @@ function BookRide({
 
   const createBooking = async (e) => {
     e.preventDefault();
+
+    if (!fareEstimate) {
+      setMessage("Please show the estimated price before confirming.");
+      return;
+    }
 
     try {
       const userId = user.id || user._id;
@@ -119,7 +125,11 @@ function BookRide({
         body: JSON.stringify({
           userId,
           ...bookingForm,
-          estimatedPrice,
+          estimatedPrice: fareEstimate.totalPrice,
+          basePrice: fareEstimate.basePrice,
+          discountApplied: fareEstimate.discountApplied,
+          discountPercent: fareEstimate.discountPercent,
+          discountMultiplier: fareEstimate.discountMultiplier,
         }),
       });
 
@@ -140,7 +150,7 @@ function BookRide({
         cabType: "Economic",
       });
 
-      setEstimatedPrice(null);
+      setFareEstimate(null);
 
       loadBookings(userId);
       setActivePage("bookings");
@@ -202,9 +212,7 @@ function BookRide({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">
-              Cab Type
-            </label>
+            <label className="block text-sm font-medium mb-1">Cab Type</label>
 
             <select
               name="cabType"
@@ -226,10 +234,22 @@ function BookRide({
             Show Estimated Price
           </button>
 
-          {estimatedPrice !== null && (
+          {fareEstimate && (
             <div className="bg-gray-100 p-4 rounded-lg text-center">
+              {fareEstimate.discountApplied && (
+                <>
+                  <p className="text-sm text-green-700 font-semibold">
+                    Discount applied: {fareEstimate.discountPercent}%
+                  </p>
+
+                  <p className="text-sm line-through text-gray-500">
+                    Original Price: €{Number(fareEstimate.basePrice).toFixed(2)}
+                  </p>
+                </>
+              )}
+
               <p className="text-lg font-bold">
-                Estimated Price: €{Number(estimatedPrice).toFixed(2)}
+                Estimated Price: €{Number(fareEstimate.totalPrice).toFixed(2)}
               </p>
             </div>
           )}
@@ -246,14 +266,7 @@ function BookRide({
   );
 }
 
-function Input({
-  label,
-  type = "text",
-  name,
-  value,
-  onChange,
-  placeholder,
-}) {
+function Input({ label, type = "text", name, value, onChange, placeholder }) {
   return (
     <div>
       <label className="block text-sm font-medium mb-1">{label}</label>

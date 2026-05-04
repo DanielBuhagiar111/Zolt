@@ -34,12 +34,20 @@ app.post("/api/payments", async (req, res) => {
 
     const departureRes = await axios.get(
       `${process.env.LOCATION_SERVICE_URL}/api/locations/coordinates`,
-      { params: { q: booking.startLocation } }
+      {
+        params: {
+          q: `${booking.startLocation}, Malta`,
+        },
+      }
     );
 
     const arrivalRes = await axios.get(
       `${process.env.LOCATION_SERVICE_URL}/api/locations/coordinates`,
-      { params: { q: booking.endLocation } }
+      {
+        params: {
+          q: `${booking.endLocation}, Malta`,
+        },
+      }
     );
 
     const discount = customer.hasDiscount ? 0.9 : 1;
@@ -58,21 +66,18 @@ app.post("/api/payments", async (req, res) => {
       }
     );
 
-    const cabFare = fareRes.data.cabFare;
-    const cabMultiplier = fareRes.data.cabMultiplier;
-    const daytimeMultiplier = fareRes.data.daytimeMultiplier;
-    const passengersMultiplier = fareRes.data.passengersMultiplier;
-    const totalPrice = fareRes.data.totalPrice;
-
     const payment = await Payment.create({
       userId,
       bookingId,
-      cabFare,
-      cabMultiplier,
-      daytimeMultiplier,
-      passengersMultiplier,
+      cabFare: fareRes.data.cabFare,
+      cabMultiplier: fareRes.data.cabMultiplier,
+      daytimeMultiplier: fareRes.data.daytimeMultiplier,
+      passengersMultiplier: fareRes.data.passengersMultiplier,
       discount,
-      totalPrice,
+      discountApplied: fareRes.data.discountApplied,
+      discountPercent: fareRes.data.discountPercent,
+      discountAmount: fareRes.data.discountAmount,
+      totalPrice: fareRes.data.totalPrice,
     });
 
     await axios.put(

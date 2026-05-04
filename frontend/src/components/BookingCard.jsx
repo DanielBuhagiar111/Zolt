@@ -6,9 +6,17 @@ function BookingCard({ booking, payBooking }) {
       </h3>
 
       <p>Date: {new Date(booking.dateTime).toLocaleString()}</p>
+
       <p>Passengers: {booking.passengers}</p>
+
       <p>Cab Type: {booking.cabType}</p>
-      <p>Status: {booking.status || "pending"}</p>
+
+      {booking.estimatedPrice > 0 && (
+        <p>
+          Estimated Price: €
+          {Number(booking.estimatedPrice).toFixed(2)}
+        </p>
+      )}
 
       {booking.status !== "completed" && (
         <button
@@ -18,6 +26,25 @@ function BookingCard({ booking, payBooking }) {
           Pay Now
         </button>
       )}
+
+      {booking.discountApplied && (
+        <>
+          <p className="text-gray-500 line-through">
+            Original Price: €
+            {Number(booking.basePrice).toFixed(2)}
+          </p>
+
+          <p className="text-green-700">
+            Discount Applied: {booking.discountPercent}%
+          </p>
+        </>
+      )}
+
+
+
+      <p className="mt-4">
+        Status: {booking.status || "pending"}
+      </p>
     </div>
   );
 }

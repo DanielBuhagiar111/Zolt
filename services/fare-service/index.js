@@ -63,9 +63,7 @@ app.post("/api/fares/estimate", async (req, res) => {
 
     const data = response.data;
 
-    const fareInCents =
-      data?.journey?.fares?.[0]?.price_in_cents || 0;
-
+    const fareInCents = data?.journey?.fares?.[0]?.price_in_cents || 0;
     const cabFare = fareInCents / 100;
 
     let cabMultiplier = 1;
@@ -88,19 +86,23 @@ app.post("/api/fares/estimate", async (req, res) => {
 
     let passengersMultiplier = 1;
 
-    if (
-      Number(passengers) >= 5 &&
-      Number(passengers) <= 8
-    ) {
+    if (Number(passengers) >= 5 && Number(passengers) <= 8) {
       passengersMultiplier = 2;
     }
 
-    const totalPrice =
-      cabFare *
-      cabMultiplier *
-      daytimeMultiplier *
-      passengersMultiplier *
-      Number(discount);
+    const discountMultiplier = Number(discount);
+
+    const basePrice =
+      cabFare * cabMultiplier * daytimeMultiplier * passengersMultiplier;
+
+    const totalPrice = basePrice * discountMultiplier;
+
+    const discountApplied = discountMultiplier < 1;
+    const discountPercent = discountApplied
+      ? Number(((1 - discountMultiplier) * 100).toFixed(0))
+      : 0;
+
+    const discountAmount = basePrice - totalPrice;
 
     res.json({
       cabFare: Number(cabFare.toFixed(2)),
@@ -109,8 +111,14 @@ app.post("/api/fares/estimate", async (req, res) => {
       daytimeMultiplier,
       passengers: Number(passengers),
       passengersMultiplier,
-      discount: Number(discount),
+
+      basePrice: Number(basePrice.toFixed(2)),
+      discountMultiplier,
+      discountApplied,
+      discountPercent,
+      discountAmount: Number(discountAmount.toFixed(2)),
       totalPrice: Number(totalPrice.toFixed(2)),
+
       fullData: data,
     });
   } catch (error) {
