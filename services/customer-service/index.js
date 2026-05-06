@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 const connectDB = require("./config/db");
 const User = require("./models/User");
 
-dotenv.config({ path: "../../.env" });
+dotenv.config();
 connectDB();
 
 const app = express();
@@ -228,7 +228,7 @@ app.post("/api/customers/:id/completed-booking", async function (req, res) {
   }
 });
 
-const PORT = process.env.CUSTOMER_SERVICE_PORT || 5001;
+const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, function () {
   console.log("Customer service running on port " + PORT);

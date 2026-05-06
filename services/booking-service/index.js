@@ -6,7 +6,7 @@ const axios = require("axios");
 const connectDB = require("./config/db");
 const Booking = require("./models/Booking");
 
-dotenv.config({ path: "../../.env" });
+dotenv.config();
 connectDB();
 
 const app = express();
@@ -156,7 +156,7 @@ app.put("/api/bookings/:id/status", async function (req, res) {
   }
 });
 
-const PORT = process.env.BOOKING_SERVICE_PORT || 5002;
+const PORT = process.env.PORT || 5002;
 
 app.listen(PORT, function () {
   console.log("Booking service running on port " + PORT);

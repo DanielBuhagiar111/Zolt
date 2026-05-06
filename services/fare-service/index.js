@@ -3,8 +3,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const axios = require("axios");
 
-dotenv.config({ path: "../../.env" });
-
+dotenv.config();
 const app = express();
 
 app.use(cors());
@@ -155,7 +154,7 @@ app.post("/api/fares/estimate", async function (req, res) {
   }
 });
 
-const PORT = process.env.FARE_SERVICE_PORT || 5003;
+const PORT = process.env.PORT || 5003;
 
 app.listen(PORT, function () {
   console.log("Fare service running on port " + PORT);

@@ -6,7 +6,7 @@ const axios = require("axios");
 const connectDB = require("./config/db");
 const Location = require("./models/Location");
 
-dotenv.config({ path: "../../.env" });
+dotenv.config();
 connectDB();
 
 const app = express();
@@ -252,7 +252,7 @@ app.get("/api/locations/coordinates", async function (req, res) {
   }
 });
 
-const PORT = process.env.LOCATION_SERVICE_PORT || 5004;
+const PORT = process.env.PORT || 5004;
 
 app.listen(PORT, function () {
   console.log("Location service running on port " + PORT);

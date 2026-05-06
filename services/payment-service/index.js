@@ -6,7 +6,7 @@ const axios = require("axios");
 const connectDB = require("./config/db");
 const Payment = require("./models/Payment");
 
-dotenv.config({ path: "../../.env" });
+dotenv.config();
 connectDB();
 
 const app = express();
@@ -164,7 +164,7 @@ app.get("/api/payments/:id", async function (req, res) {
   }
 });
 
-const PORT = process.env.PAYMENT_SERVICE_PORT || 5005;
+const PORT = process.env.PORT || 5005;
 
 app.listen(PORT, function () {
   console.log("Payment service running on port " + PORT);
