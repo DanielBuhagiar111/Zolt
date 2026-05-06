@@ -206,7 +206,7 @@ function BookRide({ user, API_URL, setMessage, loadBookings, setActivePage }) {
           />
 
           <p className="text-sm text-gray-500 -mt-3">
-            Rides between 12:00 AM and 8:00 AM cost 20% extra.
+            Rides between 00:00 and 08:00 cost 20% extra.
           </p>
 
           <div>
