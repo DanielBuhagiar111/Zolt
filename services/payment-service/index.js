@@ -104,6 +104,15 @@ app.post("/api/payments", async function (req, res) {
         "/completed-booking"
     );
 
+    if (discount < 1) {
+      await axios.put(
+        process.env.CUSTOMER_SERVICE_URL +
+          "/api/customers/" +
+          userId +
+          "/use-discount"
+      );
+    }
+
     res.status(201).json({
       message: "Payment successful",
       payment: payment,

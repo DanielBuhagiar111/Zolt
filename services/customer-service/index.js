@@ -204,7 +204,7 @@ app.post("/api/customers/:id/completed-booking", async function (req, res) {
 
     user.completedBookings = user.completedBookings + 1;
 
-    if (user.completedBookings >= 3 && user.hasDiscount === false) {
+    if (user.completedBookings === 3 && user.hasDiscount === false) {
       user.hasDiscount = true;
 
       user.notifications.push({
@@ -223,6 +223,34 @@ app.post("/api/customers/:id/completed-booking", async function (req, res) {
   } catch (error) {
     res.status(500).json({
       message: "Could not update completed booking",
+      error: error.message,
+    });
+  }
+});
+
+app.put("/api/customers/:id/use-discount", async function (req, res) {
+  try {
+    const userId = req.params.id;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    user.hasDiscount = false;
+
+    await user.save();
+
+    res.json({
+      message: "Discount marked as used",
+      hasDiscount: user.hasDiscount,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Could not update discount",
       error: error.message,
     });
   }
