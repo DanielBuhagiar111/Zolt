@@ -29,62 +29,27 @@ app.post("/api/payments", async function (req, res) {
 
     const booking = bookingRes.data;
 
-    const customerRes = await axios.get(
-      process.env.CUSTOMER_SERVICE_URL + "/api/customers/" + userId
-    );
-
-    const customer = customerRes.data;
-
-    const departureRes = await axios.get(
-      process.env.LOCATION_SERVICE_URL + "/api/locations/coordinates",
-      {
-        params: {
-          q: booking.startLocation + ", Malta",
-        },
-      }
-    );
-
-    const arrivalRes = await axios.get(
-      process.env.LOCATION_SERVICE_URL + "/api/locations/coordinates",
-      {
-        params: {
-          q: booking.endLocation + ", Malta",
-        },
-      }
-    );
-
-    let discount = 1;
-
-    if (customer.hasDiscount) {
-      discount = 0.9;
-    }
-
-    const fareRes = await axios.post(
-      process.env.FARE_SERVICE_URL + "/api/fares/estimate",
-      {
-        dep_lat: departureRes.data.lat,
-        dep_lng: departureRes.data.lng,
-        arr_lat: arrivalRes.data.lat,
-        arr_lng: arrivalRes.data.lng,
-        cabType: booking.cabType,
-        dateTime: booking.dateTime,
-        passengers: booking.passengers,
-        discount: discount,
-      }
-    );
+    const totalPrice = booking.estimatedPrice;
+    const basePrice = booking.basePrice;
+    const discountMultiplier = booking.discountMultiplier || 1;
+    const discountApplied = booking.discountApplied || false;
+    const discountPercent = booking.discountPercent || 0;
+    const discountAmount = basePrice - totalPrice;
 
     const payment = await Payment.create({
       userId: userId,
       bookingId: bookingId,
-      cabFare: fareRes.data.cabFare,
-      cabMultiplier: fareRes.data.cabMultiplier,
-      daytimeMultiplier: fareRes.data.daytimeMultiplier,
-      passengersMultiplier: fareRes.data.passengersMultiplier,
-      discount: discount,
-      discountApplied: fareRes.data.discountApplied,
-      discountPercent: fareRes.data.discountPercent,
-      discountAmount: fareRes.data.discountAmount,
-      totalPrice: fareRes.data.totalPrice,
+
+      cabFare: basePrice,
+      cabMultiplier: 1,
+      daytimeMultiplier: 1,
+      passengersMultiplier: 1,
+
+      discount: discountMultiplier,
+      discountApplied: discountApplied,
+      discountPercent: discountPercent,
+      discountAmount: Number(discountAmount.toFixed(2)),
+      totalPrice: totalPrice,
     });
 
     await axios.put(
@@ -104,7 +69,7 @@ app.post("/api/payments", async function (req, res) {
         "/completed-booking"
     );
 
-    if (discount < 1) {
+    if (discountMultiplier < 1) {
       await axios.put(
         process.env.CUSTOMER_SERVICE_URL +
           "/api/customers/" +
