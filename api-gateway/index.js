@@ -25,51 +25,59 @@ const LOCATION_SERVICE_URL =
 const PAYMENT_SERVICE_URL =
   process.env.PAYMENT_SERVICE_URL || "http://localhost:5005";
 
-app.get("/", (req, res) => {
+app.get("/", function (req, res) {
   res.json({ message: "API Gateway is running" });
 });
 
-const forwardRequest = async (req, res, serviceUrl) => {
+async function forwardRequest(req, res, serviceUrl) {
   try {
+    const fullUrl = serviceUrl + req.originalUrl;
+
     const response = await axios({
       method: req.method,
-      url: `${serviceUrl}${req.originalUrl}`,
+      url: fullUrl,
       data: req.body,
     });
 
     res.status(response.status).json(response.data);
   } catch (error) {
-    res.status(error.response?.status || 500).json(
-      error.response?.data || {
-        message: "Gateway error",
-        error: error.message,
-      }
-    );
-  }
-};
+    let statusCode = 500;
+    let errorData = {
+      message: "Gateway error",
+      error: error.message,
+    };
 
-app.use("/api/customers", (req, res) => {
+    if (error.response) {
+      statusCode = error.response.status;
+      errorData = error.response.data;
+    }
+
+    res.status(statusCode).json(errorData);
+  }
+}
+
+app.use("/api/customers", function (req, res) {
   forwardRequest(req, res, CUSTOMER_SERVICE_URL);
 });
 
-app.use("/api/bookings", (req, res) => {
+app.use("/api/bookings", function (req, res) {
   forwardRequest(req, res, BOOKING_SERVICE_URL);
 });
 
-app.use("/api/fares", (req, res) => {
+app.use("/api/fares", function (req, res) {
   forwardRequest(req, res, FARE_SERVICE_URL);
 });
 
-app.use("/api/locations", (req, res) => {
+app.use("/api/locations", function (req, res) {
   forwardRequest(req, res, LOCATION_SERVICE_URL);
 });
 
-app.use("/api/payments", (req, res) => {
+app.use("/api/payments", function (req, res) {
   forwardRequest(req, res, PAYMENT_SERVICE_URL);
 });
 
 const PORT = process.env.API_GATEWAY_PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`API Gateway running on port ${PORT}`);
+app.listen(PORT, function () {
+  console.log("API Gateway running on port " + PORT);
 });

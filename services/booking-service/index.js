@@ -14,51 +14,59 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
+app.get("/", function (req, res) {
   res.json({ message: "Booking service is running" });
 });
 
-app.post("/api/bookings", async (req, res) => {
+app.post("/api/bookings", async function (req, res) {
   try {
-    const {
-      userId,
-      startLocation,
-      endLocation,
-      dateTime,
-      passengers,
-      cabType,
-      estimatedPrice,
-      basePrice,
-      discountApplied,
-      discountPercent,
-      discountMultiplier,
-    } = req.body;
+    const userId = req.body.userId;
+    const startLocation = req.body.startLocation;
+    const endLocation = req.body.endLocation;
+    const dateTime = req.body.dateTime;
+    const passengers = req.body.passengers;
+    const cabType = req.body.cabType;
+    const estimatedPrice = req.body.estimatedPrice;
+    const basePrice = req.body.basePrice;
+    const discountApplied = req.body.discountApplied;
+    const discountPercent = req.body.discountPercent;
+    const discountMultiplier = req.body.discountMultiplier;
 
     if (Number(passengers) > 8) {
-      return res.status(400).json({ message: "Maximum 8 passengers allowed" });
+      return res.status(400).json({
+        message: "Maximum 8 passengers allowed",
+      });
     }
 
     const booking = await Booking.create({
-      userId,
-      startLocation,
-      endLocation,
-      dateTime,
-      passengers,
-      cabType,
-      estimatedPrice,
-      basePrice,
-      discountApplied,
-      discountPercent,
-      discountMultiplier,
+      userId: userId,
+      startLocation: startLocation,
+      endLocation: endLocation,
+      dateTime: dateTime,
+      passengers: passengers,
+      cabType: cabType,
+      estimatedPrice: estimatedPrice,
+      basePrice: basePrice,
+      discountApplied: discountApplied,
+      discountPercent: discountPercent,
+      discountMultiplier: discountMultiplier,
     });
 
-    setTimeout(async () => {
+    setTimeout(async function () {
       try {
         await axios.post(
-          `${process.env.CUSTOMER_SERVICE_URL}/api/customers/${userId}/notifications`,
+          process.env.CUSTOMER_SERVICE_URL +
+            "/api/customers/" +
+            userId +
+            "/notifications",
           {
             title: "Cab Ready",
-            message: `Your cab from ${startLocation} to ${endLocation} is ready for pickup.`,
+            message:
+              "Your cab from " +
+              startLocation +
+              " to " +
+              endLocation +
+              " is ready for pickup.",
           }
         );
       } catch (error) {
@@ -68,16 +76,23 @@ app.post("/api/bookings", async (req, res) => {
 
     res.status(201).json({
       message: "Booking created successfully",
-      booking,
+      booking: booking,
     });
   } catch (error) {
-    res.status(500).json({ message: "Booking failed", error: error.message });
+    res.status(500).json({
+      message: "Booking failed",
+      error: error.message,
+    });
   }
 });
 
-app.get("/api/bookings/user/:userId", async (req, res) => {
+app.get("/api/bookings/user/:userId", async function (req, res) {
   try {
-    const bookings = await Booking.find({ userId: req.params.userId }).sort({
+    const userId = req.params.userId;
+
+    const bookings = await Booking.find({
+      userId: userId,
+    }).sort({
       createdAt: -1,
     });
 
@@ -90,12 +105,16 @@ app.get("/api/bookings/user/:userId", async (req, res) => {
   }
 });
 
-app.get("/api/bookings/:id", async (req, res) => {
+app.get("/api/bookings/:id", async function (req, res) {
   try {
-    const booking = await Booking.findById(req.params.id);
+    const bookingId = req.params.id;
+
+    const booking = await Booking.findById(bookingId);
 
     if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
+      return res.status(404).json({
+        message: "Booking not found",
+      });
     }
 
     res.json(booking);
@@ -107,18 +126,25 @@ app.get("/api/bookings/:id", async (req, res) => {
   }
 });
 
-app.put("/api/bookings/:id/status", async (req, res) => {
+app.put("/api/bookings/:id/status", async function (req, res) {
   try {
-    const { status } = req.body;
+    const bookingId = req.params.id;
+    const status = req.body.status;
 
     const booking = await Booking.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { returnDocument: "after" }
+      bookingId,
+      {
+        status: status,
+      },
+      {
+        returnDocument: "after",
+      }
     );
 
     if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
+      return res.status(404).json({
+        message: "Booking not found",
+      });
     }
 
     res.json(booking);
@@ -132,6 +158,6 @@ app.put("/api/bookings/:id/status", async (req, res) => {
 
 const PORT = process.env.BOOKING_SERVICE_PORT || 5002;
 
-app.listen(PORT, () => {
-  console.log(`Booking service running on port ${PORT}`);
+app.listen(PORT, function () {
+  console.log("Booking service running on port " + PORT);
 });

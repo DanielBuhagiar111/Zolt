@@ -14,46 +14,53 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
+app.get("/", function (req, res) {
   res.json({ message: "Payment service is running" });
 });
 
-app.post("/api/payments", async (req, res) => {
+app.post("/api/payments", async function (req, res) {
   try {
-    const { userId, bookingId } = req.body;
+    const userId = req.body.userId;
+    const bookingId = req.body.bookingId;
 
     const bookingRes = await axios.get(
-      `${process.env.BOOKING_SERVICE_URL}/api/bookings/${bookingId}`
+      process.env.BOOKING_SERVICE_URL + "/api/bookings/" + bookingId
     );
+
     const booking = bookingRes.data;
 
     const customerRes = await axios.get(
-      `${process.env.CUSTOMER_SERVICE_URL}/api/customers/${userId}`
+      process.env.CUSTOMER_SERVICE_URL + "/api/customers/" + userId
     );
+
     const customer = customerRes.data;
 
     const departureRes = await axios.get(
-      `${process.env.LOCATION_SERVICE_URL}/api/locations/coordinates`,
+      process.env.LOCATION_SERVICE_URL + "/api/locations/coordinates",
       {
         params: {
-          q: `${booking.startLocation}, Malta`,
+          q: booking.startLocation + ", Malta",
         },
       }
     );
 
     const arrivalRes = await axios.get(
-      `${process.env.LOCATION_SERVICE_URL}/api/locations/coordinates`,
+      process.env.LOCATION_SERVICE_URL + "/api/locations/coordinates",
       {
         params: {
-          q: `${booking.endLocation}, Malta`,
+          q: booking.endLocation + ", Malta",
         },
       }
     );
 
-    const discount = customer.hasDiscount ? 0.9 : 1;
+    let discount = 1;
+
+    if (customer.hasDiscount) {
+      discount = 0.9;
+    }
 
     const fareRes = await axios.post(
-      `${process.env.FARE_SERVICE_URL}/api/fares/estimate`,
+      process.env.FARE_SERVICE_URL + "/api/fares/estimate",
       {
         dep_lat: departureRes.data.lat,
         dep_lng: departureRes.data.lng,
@@ -62,18 +69,18 @@ app.post("/api/payments", async (req, res) => {
         cabType: booking.cabType,
         dateTime: booking.dateTime,
         passengers: booking.passengers,
-        discount,
+        discount: discount,
       }
     );
 
     const payment = await Payment.create({
-      userId,
-      bookingId,
+      userId: userId,
+      bookingId: bookingId,
       cabFare: fareRes.data.cabFare,
       cabMultiplier: fareRes.data.cabMultiplier,
       daytimeMultiplier: fareRes.data.daytimeMultiplier,
       passengersMultiplier: fareRes.data.passengersMultiplier,
-      discount,
+      discount: discount,
       discountApplied: fareRes.data.discountApplied,
       discountPercent: fareRes.data.discountPercent,
       discountAmount: fareRes.data.discountAmount,
@@ -81,33 +88,49 @@ app.post("/api/payments", async (req, res) => {
     });
 
     await axios.put(
-      `${process.env.BOOKING_SERVICE_URL}/api/bookings/${bookingId}/status`,
+      process.env.BOOKING_SERVICE_URL +
+        "/api/bookings/" +
+        bookingId +
+        "/status",
       {
         status: "completed",
       }
     );
 
     await axios.post(
-      `${process.env.CUSTOMER_SERVICE_URL}/api/customers/${userId}/completed-booking`
+      process.env.CUSTOMER_SERVICE_URL +
+        "/api/customers/" +
+        userId +
+        "/completed-booking"
     );
 
     res.status(201).json({
       message: "Payment successful",
-      payment,
+      payment: payment,
     });
   } catch (error) {
-    console.error("Payment error:", error.response?.data || error.message);
+    let errorMessage = error.message;
+
+    if (error.response) {
+      errorMessage = error.response.data;
+    }
+
+    console.log("Payment error:", errorMessage);
 
     res.status(500).json({
       message: "Payment failed",
-      error: error.response?.data || error.message,
+      error: errorMessage,
     });
   }
 });
 
-app.get("/api/payments/user/:userId", async (req, res) => {
+app.get("/api/payments/user/:userId", async function (req, res) {
   try {
-    const payments = await Payment.find({ userId: req.params.userId }).sort({
+    const userId = req.params.userId;
+
+    const payments = await Payment.find({
+      userId: userId,
+    }).sort({
       createdAt: -1,
     });
 
@@ -120,9 +143,11 @@ app.get("/api/payments/user/:userId", async (req, res) => {
   }
 });
 
-app.get("/api/payments/:id", async (req, res) => {
+app.get("/api/payments/:id", async function (req, res) {
   try {
-    const payment = await Payment.findById(req.params.id);
+    const paymentId = req.params.id;
+
+    const payment = await Payment.findById(paymentId);
 
     if (!payment) {
       return res.status(404).json({
@@ -141,6 +166,6 @@ app.get("/api/payments/:id", async (req, res) => {
 
 const PORT = process.env.PAYMENT_SERVICE_PORT || 5005;
 
-app.listen(PORT, () => {
-  console.log(`Payment service running on port ${PORT}`);
+app.listen(PORT, function () {
+  console.log("Payment service running on port " + PORT);
 });

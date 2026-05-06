@@ -21,45 +21,77 @@ function Dashboard() {
   const [notifications, setNotifications] = useState([]);
   const [message, setMessage] = useState("");
 
-  const loadDashboardData = async (userId) => {
+  async function loadDashboardData(userId) {
     try {
-      const [bookingsRes, paymentsRes, locationsRes, notificationsRes] =
-        await Promise.all([
-          fetch(`${API_URL}/bookings/user/${userId}`),
-          fetch(`${API_URL}/payments/user/${userId}`),
-          fetch(`${API_URL}/locations/user/${userId}`),
-          fetch(`${API_URL}/customers/${userId}/notifications`),
-        ]);
+      const bookingsRes = await fetch(API_URL + "/bookings/user/" + userId);
+      const paymentsRes = await fetch(API_URL + "/payments/user/" + userId);
+      const locationsRes = await fetch(API_URL + "/locations/user/" + userId);
+      const notificationsRes = await fetch(
+        API_URL + "/customers/" + userId + "/notifications"
+      );
 
-      if (bookingsRes.ok) setBookings(await bookingsRes.json());
-      if (paymentsRes.ok) setPayments(await paymentsRes.json());
-      if (locationsRes.ok) setLocations(await locationsRes.json());
-      if (notificationsRes.ok) setNotifications(await notificationsRes.json());
+      if (bookingsRes.ok) {
+        const bookingsData = await bookingsRes.json();
+        setBookings(bookingsData);
+      }
+
+      if (paymentsRes.ok) {
+        const paymentsData = await paymentsRes.json();
+        setPayments(paymentsData);
+      }
+
+      if (locationsRes.ok) {
+        const locationsData = await locationsRes.json();
+        setLocations(locationsData);
+      }
+
+      if (notificationsRes.ok) {
+        const notificationsData = await notificationsRes.json();
+        setNotifications(notificationsData);
+      }
     } catch (error) {
-      console.error(error);
+      console.log(error);
       setMessage("Could not load dashboard data.");
     }
-  };
+  }
 
-  const loadBookings = async (userId) => {
-    const response = await fetch(`${API_URL}/bookings/user/${userId}`);
-    if (response.ok) setBookings(await response.json());
-  };
+  async function loadBookings(userId) {
+    const response = await fetch(API_URL + "/bookings/user/" + userId);
 
-  const loadPayments = async (userId) => {
-    const response = await fetch(`${API_URL}/payments/user/${userId}`);
-    if (response.ok) setPayments(await response.json());
-  };
+    if (response.ok) {
+      const data = await response.json();
+      setBookings(data);
+    }
+  }
 
-  const loadLocations = async (userId) => {
-    const response = await fetch(`${API_URL}/locations/user/${userId}`);
-    if (response.ok) setLocations(await response.json());
-  };
+  async function loadPayments(userId) {
+    const response = await fetch(API_URL + "/payments/user/" + userId);
 
-  const loadNotifications = async (userId) => {
-    const response = await fetch(`${API_URL}/customers/${userId}/notifications`);
-    if (response.ok) setNotifications(await response.json());
-  };
+    if (response.ok) {
+      const data = await response.json();
+      setPayments(data);
+    }
+  }
+
+  async function loadLocations(userId) {
+    const response = await fetch(API_URL + "/locations/user/" + userId);
+
+    if (response.ok) {
+      const data = await response.json();
+      setLocations(data);
+    }
+  }
+
+  async function loadNotifications(userId) {
+    const response = await fetch(
+      API_URL + "/customers/" + userId + "/notifications"
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      setNotifications(data);
+    }
+  }
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -71,28 +103,38 @@ function Dashboard() {
     }
 
     setUser(storedUser);
-    loadDashboardData(storedUser.id || storedUser._id);
+
+    const userId = storedUser.id || storedUser._id;
+    loadDashboardData(userId);
   }, [navigate]);
 
   useEffect(() => {
-    if (!user || activePage !== "inbox") return;
+    if (!user) {
+      return;
+    }
+
+    if (activePage !== "inbox") {
+      return;
+    }
 
     const userId = user.id || user._id;
 
     loadNotifications(userId);
 
-    const interval = setInterval(() => {
+    const interval = setInterval(function () {
       loadNotifications(userId);
     }, 3000);
 
-    return () => clearInterval(interval);
+    return function () {
+      clearInterval(interval);
+    };
   }, [activePage, user]);
 
-  const logout = () => {
+  function logout() {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     navigate("/");
-  };
+  }
 
   if (!user) {
     return null;
@@ -107,7 +149,7 @@ function Dashboard() {
       />
 
       <main className="max-w-5xl mx-auto p-8">
-        {message && (
+        {message !== "" && (
           <div className="mb-6 bg-purple-100 border border-purple-300 text-purple-800 p-4 rounded-xl">
             {message}
           </div>

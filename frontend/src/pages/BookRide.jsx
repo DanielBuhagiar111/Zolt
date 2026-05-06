@@ -1,12 +1,6 @@
 import { useState } from "react";
 
-function BookRide({
-  user,
-  API_URL,
-  setMessage,
-  loadBookings,
-  setActivePage,
-}) {
+function BookRide({ user, API_URL, setMessage, loadBookings, setActivePage }) {
   const [bookingForm, setBookingForm] = useState({
     startLocation: "",
     endLocation: "",
@@ -17,24 +11,27 @@ function BookRide({
 
   const [fareEstimate, setFareEstimate] = useState(null);
 
-  const handleChange = (e) => {
+  function handleChange(e) {
+    const name = e.target.name;
+    const value = e.target.value;
+
     setBookingForm({
       ...bookingForm,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
 
     setFareEstimate(null);
-  };
+  }
 
-  const showEstimatedPrice = async () => {
+  async function showEstimatedPrice() {
     try {
       setMessage("");
       setFareEstimate(null);
 
       if (
-        !bookingForm.startLocation ||
-        !bookingForm.endLocation ||
-        !bookingForm.dateTime
+        bookingForm.startLocation === "" ||
+        bookingForm.endLocation === "" ||
+        bookingForm.dateTime === ""
       ) {
         setMessage("Please fill in pickup, dropoff, and date/time first.");
         return;
@@ -42,11 +39,11 @@ function BookRide({
 
       const userId = user.id || user._id;
 
-      const startQuery = encodeURIComponent(`${bookingForm.startLocation}, Malta`);
-      const endQuery = encodeURIComponent(`${bookingForm.endLocation}, Malta`);
+      const startQuery = encodeURIComponent(bookingForm.startLocation + ", Malta");
+      const endQuery = encodeURIComponent(bookingForm.endLocation + ", Malta");
 
       const startResponse = await fetch(
-        `${API_URL}/locations/coordinates?q=${startQuery}`
+        API_URL + "/locations/coordinates?q=" + startQuery
       );
       const startData = await startResponse.json();
 
@@ -56,7 +53,7 @@ function BookRide({
       }
 
       const endResponse = await fetch(
-        `${API_URL}/locations/coordinates?q=${endQuery}`
+        API_URL + "/locations/coordinates?q=" + endQuery
       );
       const endData = await endResponse.json();
 
@@ -65,7 +62,7 @@ function BookRide({
         return;
       }
 
-      const customerResponse = await fetch(`${API_URL}/customers/${userId}`);
+      const customerResponse = await fetch(API_URL + "/customers/" + userId);
       const customerData = await customerResponse.json();
 
       if (!customerResponse.ok) {
@@ -73,9 +70,13 @@ function BookRide({
         return;
       }
 
-      const discount = customerData.hasDiscount ? 0.9 : 1;
+      let discount = 1;
 
-      const fareResponse = await fetch(`${API_URL}/fares/estimate`, {
+      if (customerData.hasDiscount === true) {
+        discount = 0.9;
+      }
+
+      const fareResponse = await fetch(API_URL + "/fares/estimate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -88,7 +89,7 @@ function BookRide({
           cabType: bookingForm.cabType,
           dateTime: bookingForm.dateTime,
           passengers: Number(bookingForm.passengers),
-          discount,
+          discount: discount,
         }),
       });
 
@@ -101,15 +102,15 @@ function BookRide({
 
       setFareEstimate(fareData);
     } catch (error) {
-      console.error(error);
+      console.log(error);
       setMessage("Server error while estimating fare.");
     }
-  };
+  }
 
-  const createBooking = async (e) => {
+  async function createBooking(e) {
     e.preventDefault();
 
-    if (!fareEstimate) {
+    if (fareEstimate === null) {
       setMessage("Please show the estimated price before confirming.");
       return;
     }
@@ -117,14 +118,18 @@ function BookRide({
     try {
       const userId = user.id || user._id;
 
-      const response = await fetch(`${API_URL}/bookings`, {
+      const response = await fetch(API_URL + "/bookings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId,
-          ...bookingForm,
+          userId: userId,
+          startLocation: bookingForm.startLocation,
+          endLocation: bookingForm.endLocation,
+          dateTime: bookingForm.dateTime,
+          passengers: bookingForm.passengers,
+          cabType: bookingForm.cabType,
           estimatedPrice: fareEstimate.totalPrice,
           basePrice: fareEstimate.basePrice,
           discountApplied: fareEstimate.discountApplied,
@@ -155,10 +160,18 @@ function BookRide({
       loadBookings(userId);
       setActivePage("bookings");
     } catch (error) {
-      console.error(error);
+      console.log(error);
       setMessage("Server error while creating booking.");
     }
-  };
+  }
+
+  let confirmButtonClass =
+    "w-full py-3 rounded-lg font-semibold text-white bg-purple-600 hover:bg-purple-700";
+
+  if (fareEstimate === null) {
+    confirmButtonClass =
+      "w-full py-3 rounded-lg font-semibold text-white bg-gray-400 cursor-not-allowed";
+  }
 
   return (
     <section>
@@ -207,15 +220,19 @@ function BookRide({
               onChange={handleChange}
               className="w-full border rounded-lg p-3"
             >
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
-                <option key={num} value={num}>
-                  {num} passenger{num > 1 ? "s" : ""}
-                </option>
-              ))}
+              <option value="1">1 passenger</option>
+              <option value="2">2 passengers</option>
+              <option value="3">3 passengers</option>
+              <option value="4">4 passengers</option>
+              <option value="5">5 passengers</option>
+              <option value="6">6 passengers</option>
+              <option value="7">7 passengers</option>
+              <option value="8">8 passengers</option>
             </select>
 
             <p className="text-sm text-gray-500 mt-1">
-              1-4 passengers: standard price · 5-8 passengers: double price · More than 8 not allowed
+              1-4 passengers: standard price · 5-8 passengers: double price ·
+              More than 8 not allowed
             </p>
           </div>
 
@@ -241,7 +258,8 @@ function BookRide({
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-sm text-purple-800">
             <p className="font-semibold">Discount information</p>
             <p>
-              After 3 completed bookings, a 10% discount becomes available automatically.
+              After 3 completed bookings, a 10% discount becomes available
+              automatically.
             </p>
           </div>
 
@@ -253,10 +271,10 @@ function BookRide({
             Show Estimated Price
           </button>
 
-          {fareEstimate && (
+          {fareEstimate !== null && (
             <div className="bg-gray-100 p-4 rounded-lg text-center">
-              {fareEstimate.discountApplied && (
-                <>
+              {fareEstimate.discountApplied === true && (
+                <div>
                   <p className="text-sm text-green-700 font-semibold">
                     Discount applied: {fareEstimate.discountPercent}%
                   </p>
@@ -264,43 +282,38 @@ function BookRide({
                   <p className="text-sm line-through text-gray-500">
                     Original Price: €{Number(fareEstimate.basePrice).toFixed(2)}
                   </p>
-                </>
+                </div>
               )}
 
               <p className="text-lg font-bold">
                 Estimated Price: €{Number(fareEstimate.totalPrice).toFixed(2)}
               </p>
+
               <div className="text-sm text-gray-700 mt-3 space-y-1">
-                  <p>
-                    Base Fare: €{Number(fareEstimate.cabFare).toFixed(2)}
-                  </p>
+                <p>Base Fare: €{Number(fareEstimate.cabFare).toFixed(2)}</p>
+                <p>Cab Type Multiplier: ×{fareEstimate.cabMultiplier}</p>
+                <p>
+                  Passenger Multiplier: ×{fareEstimate.passengersMultiplier}
+                </p>
+                <p>Time Multiplier: ×{fareEstimate.daytimeMultiplier}</p>
 
-                  <p>
-                    Cab Type Multiplier: ×{fareEstimate.cabMultiplier}
+                {fareEstimate.discountApplied === true && (
+                  <p className="text-green-700">
+                    Discount Applied: -{fareEstimate.discountPercent}%
                   </p>
+                )}
 
-                  <p>
-                    Passenger Multiplier: ×{fareEstimate.passengersMultiplier}
-                  </p>
-
-                  <p>
-                    Time Multiplier: ×{fareEstimate.daytimeMultiplier}
-                  </p>
-
-                  {fareEstimate.discountApplied ? (
-                    <p className="text-green-700">
-                      Discount Applied: -{fareEstimate.discountPercent}%
-                    </p>
-                  ) : (
-                    <p>No discount applied</p>
-                  )}
-                </div>
+                {fareEstimate.discountApplied === false && (
+                  <p>No discount applied</p>
+                )}
+              </div>
             </div>
           )}
 
           <button
             type="submit"
-            className="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700"
+            disabled={fareEstimate === null}
+            className={confirmButtonClass}
           >
             Confirm Booking
           </button>
@@ -310,7 +323,11 @@ function BookRide({
   );
 }
 
-function Input({ label, type = "text", name, value, onChange, placeholder }) {
+function Input({ label, type, name, value, onChange, placeholder }) {
+  if (!type) {
+    type = "text";
+  }
+
   return (
     <div>
       <label className="block text-sm font-medium mb-1">{label}</label>

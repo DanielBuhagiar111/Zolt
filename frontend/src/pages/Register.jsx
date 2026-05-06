@@ -11,18 +11,21 @@ function Register() {
     confirmPassword: "",
   });
 
-  const navigate = useNavigate();
-
   const [message, setMessage] = useState("");
 
-  const handleChange = (e) => {
+  const navigate = useNavigate();
+
+  function handleChange(e) {
+    const name = e.target.name;
+    const value = e.target.value;
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
-  };
+  }
 
-  const handleRegister = async (e) => {
+  async function handleRegister(e) {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
@@ -31,25 +34,28 @@ function Register() {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/api/customers/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          surname: formData.surname,
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+      const response = await fetch(
+        "http://localhost:5000/api/customers/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstName: formData.firstName,
+            surname: formData.surname,
+            email: formData.email,
+            password: formData.password,
+          }),
+        }
+      );
 
       const data = await response.json();
 
       if (response.ok) {
         setMessage("Registration successful!");
 
-        setTimeout(() => {
+        setTimeout(function () {
           navigate("/");
         }, 1500);
       } else {
@@ -57,9 +63,9 @@ function Register() {
       }
     } catch (error) {
       setMessage("Could not connect to server");
-      console.error(error);
+      console.log(error);
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -73,7 +79,10 @@ function Register() {
 
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
-              <label className="block mb-1 text-sm font-medium">First Name</label>
+              <label className="block mb-1 text-sm font-medium">
+                First Name
+              </label>
+
               <input
                 type="text"
                 name="firstName"
@@ -87,6 +96,7 @@ function Register() {
 
             <div>
               <label className="block mb-1 text-sm font-medium">Surname</label>
+
               <input
                 type="text"
                 name="surname"
@@ -100,6 +110,7 @@ function Register() {
 
             <div>
               <label className="block mb-1 text-sm font-medium">Email</label>
+
               <input
                 type="email"
                 name="email"
@@ -113,6 +124,7 @@ function Register() {
 
             <div>
               <label className="block mb-1 text-sm font-medium">Password</label>
+
               <input
                 type="password"
                 name="password"
@@ -128,6 +140,7 @@ function Register() {
               <label className="block mb-1 text-sm font-medium">
                 Confirm Password
               </label>
+
               <input
                 type="password"
                 name="confirmPassword"
@@ -147,7 +160,7 @@ function Register() {
             </button>
           </form>
 
-          {message && (
+          {message !== "" && (
             <p className="mt-4 text-center text-sm text-red-500">{message}</p>
           )}
         </div>

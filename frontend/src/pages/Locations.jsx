@@ -7,27 +7,31 @@ function Locations({ user, API_URL, locations, setMessage, loadLocations }) {
     address: "",
   });
 
-  const handleChange = (e) => {
+  function handleChange(e) {
+    const name = e.target.name;
+    const value = e.target.value;
+
     setLocationForm({
       ...locationForm,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
-  };
+  }
 
-  const addLocation = async (e) => {
+  async function addLocation(e) {
     e.preventDefault();
 
     try {
       const userId = user.id || user._id;
 
-      const response = await fetch(`${API_URL}/locations`, {
+      const response = await fetch(API_URL + "/locations", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId,
-          ...locationForm,
+          userId: userId,
+          name: locationForm.name,
+          address: locationForm.address,
         }),
       });
 
@@ -39,6 +43,7 @@ function Locations({ user, API_URL, locations, setMessage, loadLocations }) {
       }
 
       setMessage("Location added successfully.");
+
       setLocationForm({
         name: "",
         address: "",
@@ -46,16 +51,16 @@ function Locations({ user, API_URL, locations, setMessage, loadLocations }) {
 
       loadLocations(userId);
     } catch (error) {
-      console.error(error);
+      console.log(error);
       setMessage("Server error while adding location.");
     }
-  };
+  }
 
-  const deleteLocation = async (locationId) => {
+  async function deleteLocation(locationId) {
     try {
       const userId = user.id || user._id;
 
-      const response = await fetch(`${API_URL}/locations/${locationId}`, {
+      const response = await fetch(API_URL + "/locations/" + locationId, {
         method: "DELETE",
       });
 
@@ -67,16 +72,16 @@ function Locations({ user, API_URL, locations, setMessage, loadLocations }) {
       setMessage("Location removed.");
       loadLocations(userId);
     } catch (error) {
-      console.error(error);
+      console.log(error);
       setMessage("Server error while deleting location.");
     }
-  };
+  }
 
-  const updateLocation = async (locationId, updatedLocation) => {
+  async function updateLocation(locationId, updatedLocation) {
     try {
       const userId = user.id || user._id;
 
-      const response = await fetch(`${API_URL}/locations/${locationId}`, {
+      const response = await fetch(API_URL + "/locations/" + locationId, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -94,10 +99,31 @@ function Locations({ user, API_URL, locations, setMessage, loadLocations }) {
       setMessage("Location updated successfully.");
       loadLocations(userId);
     } catch (error) {
-      console.error(error);
+      console.log(error);
       setMessage("Server error while updating location.");
     }
-  };
+  }
+
+  let locationList;
+
+  if (locations.length === 0) {
+    locationList = (
+      <div className="bg-white p-8 rounded-2xl shadow text-center text-gray-500">
+        No favourite locations found.
+      </div>
+    );
+  } else {
+    locationList = locations.map(function (location) {
+      return (
+        <LocationCard
+          key={location._id || location.id}
+          location={location}
+          deleteLocation={deleteLocation}
+          updateLocation={updateLocation}
+        />
+      );
+    });
+  }
 
   return (
     <section>
@@ -127,22 +153,7 @@ function Locations({ user, API_URL, locations, setMessage, loadLocations }) {
         </form>
       </div>
 
-      <div className="grid gap-5">
-        {locations.length === 0 ? (
-          <div className="bg-white p-8 rounded-2xl shadow text-center text-gray-500">
-            No favourite locations found.
-          </div>
-        ) : (
-          locations.map((location) => (
-            <LocationCard
-              key={location._id || location.id}
-              location={location}
-              deleteLocation={deleteLocation}
-              updateLocation={updateLocation}
-            />
-          ))
-        )}
-      </div>
+      <div className="grid gap-5">{locationList}</div>
     </section>
   );
 }
@@ -151,6 +162,7 @@ function Input({ label, name, value, onChange, placeholder }) {
   return (
     <div>
       <label className="block text-sm font-medium mb-1">{label}</label>
+
       <input
         type="text"
         name={name}

@@ -10,22 +10,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
+app.get("/", function (req, res) {
   res.json({ message: "Fare service is running" });
 });
 
-app.post("/api/fares/estimate", async (req, res) => {
+app.post("/api/fares/estimate", async function (req, res) {
   try {
-    const {
-      dep_lat,
-      dep_lng,
-      arr_lat,
-      arr_lng,
-      cabType,
-      dateTime,
-      passengers,
-      discount = 1,
-    } = req.body;
+    const dep_lat = req.body.dep_lat;
+    const dep_lng = req.body.dep_lng;
+    const arr_lat = req.body.arr_lat;
+    const arr_lng = req.body.arr_lng;
+    const cabType = req.body.cabType;
+    const dateTime = req.body.dateTime;
+    const passengers = req.body.passengers;
+
+    let discount = req.body.discount;
+
+    if (!discount) {
+      discount = 1;
+    }
 
     if (!dep_lat || !dep_lng || !arr_lat || !arr_lng) {
       return res.status(400).json({
@@ -49,10 +52,10 @@ app.post("/api/fares/estimate", async (req, res) => {
       "https://taxi-fare-calculator.p.rapidapi.com/search-geo",
       {
         params: {
-          dep_lat,
-          dep_lng,
-          arr_lat,
-          arr_lng,
+          dep_lat: dep_lat,
+          dep_lng: dep_lng,
+          arr_lat: arr_lat,
+          arr_lng: arr_lng,
         },
         headers: {
           "X-RapidAPI-Key": process.env.RAPIDAPI_KEY,
@@ -63,7 +66,18 @@ app.post("/api/fares/estimate", async (req, res) => {
 
     const data = response.data;
 
-    const fareInCents = data?.journey?.fares?.[0]?.price_in_cents || 0;
+    let fareInCents = 0;
+
+    if (
+      data &&
+      data.journey &&
+      data.journey.fares &&
+      data.journey.fares[0] &&
+      data.journey.fares[0].price_in_cents
+    ) {
+      fareInCents = data.journey.fares[0].price_in_cents;
+    }
+
     const cabFare = fareInCents / 100;
 
     let cabMultiplier = 1;
@@ -76,7 +90,8 @@ app.post("/api/fares/estimate", async (req, res) => {
       cabMultiplier = 1.4;
     }
 
-    const bookingHour = new Date(dateTime).getHours();
+    const bookingDate = new Date(dateTime);
+    const bookingHour = bookingDate.getHours();
 
     let daytimeMultiplier = 1;
 
@@ -97,42 +112,51 @@ app.post("/api/fares/estimate", async (req, res) => {
 
     const totalPrice = basePrice * discountMultiplier;
 
-    const discountApplied = discountMultiplier < 1;
-    const discountPercent = discountApplied
-      ? Number(((1 - discountMultiplier) * 100).toFixed(0))
-      : 0;
+    let discountApplied = false;
+    let discountPercent = 0;
+
+    if (discountMultiplier < 1) {
+      discountApplied = true;
+      discountPercent = Number(((1 - discountMultiplier) * 100).toFixed(0));
+    }
 
     const discountAmount = basePrice - totalPrice;
 
     res.json({
       cabFare: Number(cabFare.toFixed(2)),
-      cabType,
-      cabMultiplier,
-      daytimeMultiplier,
+      cabType: cabType,
+      cabMultiplier: cabMultiplier,
+      daytimeMultiplier: daytimeMultiplier,
       passengers: Number(passengers),
-      passengersMultiplier,
+      passengersMultiplier: passengersMultiplier,
 
       basePrice: Number(basePrice.toFixed(2)),
-      discountMultiplier,
-      discountApplied,
-      discountPercent,
+      discountMultiplier: discountMultiplier,
+      discountApplied: discountApplied,
+      discountPercent: discountPercent,
       discountAmount: Number(discountAmount.toFixed(2)),
       totalPrice: Number(totalPrice.toFixed(2)),
 
       fullData: data,
     });
   } catch (error) {
-    console.log(error.response?.data || error.message);
+    let errorMessage = error.message;
+
+    if (error.response) {
+      errorMessage = error.response.data;
+    }
+
+    console.log(errorMessage);
 
     res.status(500).json({
       message: "Fare estimation failed",
-      error: error.response?.data || error.message,
+      error: errorMessage,
     });
   }
 });
 
 const PORT = process.env.FARE_SERVICE_PORT || 5003;
 
-app.listen(PORT, () => {
-  console.log(`Fare service running on port ${PORT}`);
+app.listen(PORT, function () {
+  console.log("Fare service running on port " + PORT);
 });

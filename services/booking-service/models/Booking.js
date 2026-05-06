@@ -2,11 +2,25 @@ const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema(
   {
-    userId: { type: String, required: true },
+    userId: {
+      type: String,
+      required: true,
+    },
 
-    startLocation: { type: String, required: true },
-    endLocation: { type: String, required: true },
-    dateTime: { type: Date, required: true },
+    startLocation: {
+      type: String,
+      required: true,
+    },
+
+    endLocation: {
+      type: String,
+      required: true,
+    },
+
+    dateTime: {
+      type: Date,
+      required: true,
+    },
 
     passengers: {
       type: Number,
@@ -52,7 +66,9 @@ const bookingSchema = new mongoose.Schema(
       default: 1,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 module.exports = mongoose.model("Booking", bookingSchema);

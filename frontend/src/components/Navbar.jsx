@@ -1,11 +1,85 @@
-function Navbar({ activePage, setActivePage, logout, showMenu = true }) {
-  const navItems = [
-    { key: "book", label: "Book a Ride" },
-    { key: "bookings", label: "My Bookings" },
-    { key: "payments", label: "Payments" },
-    { key: "locations", label: "Locations" },
-    { key: "inbox", label: "Inbox" },
-  ];
+function Navbar({ activePage, setActivePage, logout, showMenu }) {
+  if (showMenu === undefined) {
+    showMenu = true;
+  }
+
+  function openBookPage() {
+    setActivePage("book");
+  }
+
+  function openBookingsPage() {
+    setActivePage("bookings");
+  }
+
+  function openPaymentsPage() {
+    setActivePage("payments");
+  }
+
+  function openLocationsPage() {
+    setActivePage("locations");
+  }
+
+  function openInboxPage() {
+    setActivePage("inbox");
+  }
+
+  function getButtonClass(pageName) {
+    if (activePage === pageName) {
+      return "text-purple-300 font-semibold border-b-2 border-purple-400 pb-1";
+    }
+
+    return "text-gray-200 hover:text-purple-300";
+  }
+
+  let menu = null;
+
+  if (showMenu) {
+    menu = (
+      <div className="flex gap-8 text-sm">
+        <button onClick={openBookPage} className={getButtonClass("book")}>
+          Book a Ride
+        </button>
+
+        <button
+          onClick={openBookingsPage}
+          className={getButtonClass("bookings")}
+        >
+          My Bookings
+        </button>
+
+        <button
+          onClick={openPaymentsPage}
+          className={getButtonClass("payments")}
+        >
+          Payments
+        </button>
+
+        <button
+          onClick={openLocationsPage}
+          className={getButtonClass("locations")}
+        >
+          Locations
+        </button>
+
+        <button onClick={openInboxPage} className={getButtonClass("inbox")}>
+          Inbox
+        </button>
+      </div>
+    );
+  }
+
+  let logoutButton = null;
+
+  if (showMenu) {
+    logoutButton = (
+      <button
+        onClick={logout}
+        className="bg-purple-600 hover:bg-purple-700 px-5 py-2 rounded-lg font-semibold"
+      >
+        Logout
+      </button>
+    );
+  }
 
   return (
     <nav className="bg-[#140c24] text-white px-8 py-4 flex items-center justify-between shadow-lg">
@@ -19,32 +93,9 @@ function Navbar({ activePage, setActivePage, logout, showMenu = true }) {
         </h1>
       </div>
 
-      {showMenu && (
-        <>
-          <div className="flex gap-8 text-sm">
-            {navItems.map((item) => (
-              <button
-                key={item.key}
-                onClick={() => setActivePage(item.key)}
-                className={
-                  activePage === item.key
-                    ? "text-purple-300 font-semibold border-b-2 border-purple-400 pb-1"
-                    : "text-gray-200 hover:text-purple-300"
-                }
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+      {menu}
 
-          <button
-            onClick={logout}
-            className="bg-purple-600 hover:bg-purple-700 px-5 py-2 rounded-lg font-semibold"
-          >
-            Logout
-          </button>
-        </>
-      )}
+      {logoutButton}
     </nav>
   );
 }

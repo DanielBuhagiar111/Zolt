@@ -14,23 +14,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
+app.get("/", function (req, res) {
   res.json({ message: "Location service is running" });
 });
 
-app.post("/api/locations", async (req, res) => {
+app.post("/api/locations", async function (req, res) {
   try {
-    const { userId, name, address } = req.body;
+    const userId = req.body.userId;
+    const name = req.body.name;
+    const address = req.body.address;
 
     const location = await Location.create({
-      userId,
-      name,
-      address,
+      userId: userId,
+      name: name,
+      address: address,
     });
 
     res.status(201).json({
       message: "Location added successfully",
-      location,
+      location: location,
     });
   } catch (error) {
     res.status(500).json({
@@ -40,14 +42,16 @@ app.post("/api/locations", async (req, res) => {
   }
 });
 
-app.get("/api/locations/user/:userId", async (req, res) => {
+app.get("/api/locations/user/:userId", async function (req, res) {
   try {
+    const userId = req.params.userId;
+
     const locations = await Location.find({
-      userId: req.params.userId,
+      userId: userId,
     });
 
     const locationsWithWeather = await Promise.all(
-      locations.map(async (location) => {
+      locations.map(async function (location) {
         try {
           const weatherResponse = await axios.get(
             "https://weatherapi-com.p.rapidapi.com/current.json",
@@ -62,27 +66,36 @@ app.get("/api/locations/user/:userId", async (req, res) => {
             }
           );
 
-          return {
-            ...location.toObject(),
-            weather: {
-              locationName: weatherResponse.data.location.name,
-              country: weatherResponse.data.location.country,
-              condition: weatherResponse.data.current.condition.text,
-              temperature: weatherResponse.data.current.temp_c,
-              feelsLike: weatherResponse.data.current.feelslike_c,
-              humidity: weatherResponse.data.current.humidity,
-              windKph: weatherResponse.data.current.wind_kph,
-              icon: weatherResponse.data.current.condition.icon,
-            },
+          const locationObject = location.toObject();
+
+          locationObject.weather = {
+            locationName: weatherResponse.data.location.name,
+            country: weatherResponse.data.location.country,
+            condition: weatherResponse.data.current.condition.text,
+            temperature: weatherResponse.data.current.temp_c,
+            feelsLike: weatherResponse.data.current.feelslike_c,
+            humidity: weatherResponse.data.current.humidity,
+            windKph: weatherResponse.data.current.wind_kph,
+            icon: weatherResponse.data.current.condition.icon,
           };
+
+          return locationObject;
         } catch (error) {
-          console.log("Weather error:", error.response?.data || error.message);
-          return {
-            ...location.toObject(),
-            weather: {
-              error: "Weather unavailable for this location",
-            },
+          let errorMessage = error.message;
+
+          if (error.response) {
+            errorMessage = error.response.data;
+          }
+
+          console.log("Weather error:", errorMessage);
+
+          const locationObject = location.toObject();
+
+          locationObject.weather = {
+            error: "Weather unavailable for this location",
           };
+
+          return locationObject;
         }
       })
     );
@@ -96,9 +109,9 @@ app.get("/api/locations/user/:userId", async (req, res) => {
   }
 });
 
-app.get("/api/locations/weather", async (req, res) => {
+app.get("/api/locations/weather", async function (req, res) {
   try {
-    const { q } = req.query;
+    const q = req.query.q;
 
     if (!q) {
       return res.status(400).json({
@@ -110,7 +123,7 @@ app.get("/api/locations/weather", async (req, res) => {
       "https://weatherapi-com.p.rapidapi.com/current.json",
       {
         params: {
-          q,
+          q: q,
         },
         headers: {
           "X-RapidAPI-Key": process.env.RAPIDAPI_KEY,
@@ -121,21 +134,34 @@ app.get("/api/locations/weather", async (req, res) => {
 
     res.json(weatherResponse.data);
   } catch (error) {
+    let errorMessage = error.message;
+
+    if (error.response) {
+      errorMessage = error.response.data;
+    }
+
     res.status(500).json({
       message: "Weather API failed",
-      error: error.response?.data || error.message,
+      error: errorMessage,
     });
   }
 });
 
-app.put("/api/locations/:id", async (req, res) => {
+app.put("/api/locations/:id", async function (req, res) {
   try {
-    const { name, address } = req.body;
+    const locationId = req.params.id;
+    const name = req.body.name;
+    const address = req.body.address;
 
     const location = await Location.findByIdAndUpdate(
-      req.params.id,
-      { name, address },
-      { returnDocument: "after" }
+      locationId,
+      {
+        name: name,
+        address: address,
+      },
+      {
+        returnDocument: "after",
+      }
     );
 
     if (!location) {
@@ -153,9 +179,11 @@ app.put("/api/locations/:id", async (req, res) => {
   }
 });
 
-app.delete("/api/locations/:id", async (req, res) => {
+app.delete("/api/locations/:id", async function (req, res) {
   try {
-    const location = await Location.findByIdAndDelete(req.params.id);
+    const locationId = req.params.id;
+
+    const location = await Location.findByIdAndDelete(locationId);
 
     if (!location) {
       return res.status(404).json({
@@ -174,9 +202,9 @@ app.delete("/api/locations/:id", async (req, res) => {
   }
 });
 
-app.get("/api/locations/coordinates", async (req, res) => {
+app.get("/api/locations/coordinates", async function (req, res) {
   try {
-    const { q } = req.query;
+    const q = req.query.q;
 
     if (!q) {
       return res.status(400).json({
@@ -188,14 +216,14 @@ app.get("/api/locations/coordinates", async (req, res) => {
       "https://api.opencagedata.com/geocode/v1/json",
       {
         params: {
-          q,
+          q: q,
           key: process.env.OPENCAGE_API_KEY,
           limit: 1,
         },
       }
     );
 
-    if (!response.data.results.length) {
+    if (response.data.results.length === 0) {
       return res.status(404).json({
         message: "Location not found",
       });
@@ -209,17 +237,23 @@ app.get("/api/locations/coordinates", async (req, res) => {
       lng: result.geometry.lng,
     });
   } catch (error) {
-    console.log(error.response?.data || error.message);
+    let errorMessage = error.message;
+
+    if (error.response) {
+      errorMessage = error.response.data;
+    }
+
+    console.log(errorMessage);
 
     res.status(500).json({
       message: "Could not get coordinates",
-      error: error.response?.data || error.message,
+      error: errorMessage,
     });
   }
 });
 
 const PORT = process.env.LOCATION_SERVICE_PORT || 5004;
 
-app.listen(PORT, () => {
-  console.log(`Location service running on port ${PORT}`);
+app.listen(PORT, function () {
+  console.log("Location service running on port " + PORT);
 });
