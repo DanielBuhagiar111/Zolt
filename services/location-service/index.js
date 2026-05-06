@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Location service is running");
+  res.json({ message: "Location service is running" });
 });
 
 app.post("/api/locations", async (req, res) => {

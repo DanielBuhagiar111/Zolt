@@ -26,7 +26,7 @@ const PAYMENT_SERVICE_URL =
   process.env.PAYMENT_SERVICE_URL || "http://localhost:5005";
 
 app.get("/", (req, res) => {
-  res.send("API Gateway is running");
+  res.json({ message: "API Gateway is running" });
 });
 
 const forwardRequest = async (req, res, serviceUrl) => {

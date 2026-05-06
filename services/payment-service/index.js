@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Payment service is running");
+  res.json({ message: "Payment service is running" });
 });
 
 app.post("/api/payments", async (req, res) => {

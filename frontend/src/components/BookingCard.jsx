@@ -13,7 +13,7 @@ function BookingCard({ booking, payBooking }) {
 
       {booking.estimatedPrice > 0 && (
         <p>
-          Estimated Price: €
+          Price: €
           {Number(booking.estimatedPrice).toFixed(2)}
         </p>
       )}

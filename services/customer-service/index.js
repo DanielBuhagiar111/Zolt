@@ -16,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Customer service is running");
+  res.json({ message: "Customer service is running" });
 });
 
 app.post("/api/customers/register", async (req, res) => {

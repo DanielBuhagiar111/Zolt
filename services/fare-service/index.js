@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Fare service is running");
+  res.json({ message: "Fare service is running" });
 });
 
 app.post("/api/fares/estimate", async (req, res) => {

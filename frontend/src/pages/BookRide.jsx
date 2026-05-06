@@ -192,6 +192,10 @@ function BookRide({
             onChange={handleChange}
           />
 
+          <p className="text-sm text-gray-500 -mt-3">
+            Rides between 12:00 AM and 8:00 AM cost 20% extra.
+          </p>
+
           <div>
             <label className="block text-sm font-medium mb-1">
               Number of Passengers
@@ -209,6 +213,10 @@ function BookRide({
                 </option>
               ))}
             </select>
+
+            <p className="text-sm text-gray-500 mt-1">
+              1-4 passengers: standard price · 5-8 passengers: double price · More than 8 not allowed
+            </p>
           </div>
 
           <div>
@@ -224,6 +232,17 @@ function BookRide({
               <option value="Premium">Premium</option>
               <option value="Executive">Executive</option>
             </select>
+
+            <p className="text-sm text-gray-500 mt-1">
+              Economic: standard fare · Premium: +20% · Executive: +40%
+            </p>
+          </div>
+
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-sm text-purple-800">
+            <p className="font-semibold">Discount information</p>
+            <p>
+              After 3 completed bookings, a 10% discount becomes available automatically.
+            </p>
           </div>
 
           <button
@@ -251,6 +270,31 @@ function BookRide({
               <p className="text-lg font-bold">
                 Estimated Price: €{Number(fareEstimate.totalPrice).toFixed(2)}
               </p>
+              <div className="text-sm text-gray-700 mt-3 space-y-1">
+                  <p>
+                    Base Fare: €{Number(fareEstimate.cabFare).toFixed(2)}
+                  </p>
+
+                  <p>
+                    Cab Type Multiplier: ×{fareEstimate.cabMultiplier}
+                  </p>
+
+                  <p>
+                    Passenger Multiplier: ×{fareEstimate.passengersMultiplier}
+                  </p>
+
+                  <p>
+                    Time Multiplier: ×{fareEstimate.daytimeMultiplier}
+                  </p>
+
+                  {fareEstimate.discountApplied ? (
+                    <p className="text-green-700">
+                      Discount Applied: -{fareEstimate.discountPercent}%
+                    </p>
+                  ) : (
+                    <p>No discount applied</p>
+                  )}
+                </div>
             </div>
           )}
 

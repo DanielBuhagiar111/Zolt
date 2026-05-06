@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Booking service is running");
+  res.json({ message: "Booking service is running" });
 });
 
 app.post("/api/bookings", async (req, res) => {
